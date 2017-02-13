@@ -11,6 +11,10 @@ nodesAndLinks = {}
 nodesAndLinks['nodes'] = []
 nodesAndLinks['links'] = []
 
+# Add some titles
+nodesAndLinks['type'] = "NetworkGraph"
+nodesAndLinks['label'] = "Beyond The Uniform Visualization"
+
 # Get Simple Location into Dictionary
 locations = {}
 counter = 0
@@ -33,10 +37,15 @@ for row in wsData.rows:
     else:
         data = {
             #'Warefare Specialty' : row[2].value,
+            'id' : numberOfElements,
+            'properties' : {
+              'Name' : row[4].value,
+              'Years Service' : row[3].value,
+              'Industry' : row[7].value,
+              'Location' : locations[row[8].value]
+            },
             'Years Service' : row[3].value,
-            'id' : row[4].value,
-            #'Headline' : row[5].value,
-            #'Position' : row[6].value,
+            'Name' : row[4].value,
             'Industry' : row[7].value,
             'Location' : locations[row[8].value],
         }
@@ -44,7 +53,7 @@ for row in wsData.rows:
         numberOfElements += 1
     counter +=1
 
-print(numberOfElements)
+print("Number of elements: " + str(numberOfElements))
 
 # Location -
 counter = 0
@@ -52,36 +61,24 @@ count = 0
 for firstIndex, node in enumerate(nodesAndLinks['nodes']):
     for otherNode in nodesAndLinks['nodes'][firstIndex + 1:]:
         value = 0
-        if (node['Location'] == otherNode['Location']):
-            value += 1
-        if (node['Industry'] == otherNode['Industry']):
-            value += 1
+        # if (node['Location'] == otherNode['Location']):
+        #     value += 1
+        # if (node['Industry'] == otherNode['Industry']):
+        #     value += 1
         if (abs(int(node['Years Service']) - int(otherNode['Years Service'])) <= 0):
-            count += 1
             value += 1
         if (value is not 0):
+            count += 1
             linkData = {
                 'source' : node['id'],
                 'target' : otherNode['id'],
-                'value' : value
+                'cost' : value
             }
             nodesAndLinks['links'].append(linkData)
 
 print(count)
-# for idx, node in enumerate(nodesAndLinks['nodes']):
-#     for otherNode in enumerate(nodesAndLinks['nodes'][idx+1:]):
-#         print(otherNode[0])
-        # if (node['Location'] == otherNode['Location']):
-        #     counter += 1
-
-# for node in nodesAndLinks['nodes']:
-#     for otherNode in nodesAndLinks['nodes']:
-#         if (node['Location'] == otherNode['Location']):
-#             if (node['Name'] not in locationMatches):
-#                 locationMatches[otherNode['Name']] = node['Name']
-#                 counter += 1
 
 #Write to file
 json_data = json.dumps(nodesAndLinks, indent=2)
-with open('data.json', 'w') as f:
+with open('yearsOfService.json', 'w') as f:
     f.write(json_data)
