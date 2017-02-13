@@ -30,7 +30,7 @@ for row in wsLocation.rows:
 counter = 0
 numberOfElements = 0
 for row in wsData.rows:
-    if (counter == 100): #temporary
+    if (counter == 500): #temporary
         break
     if (counter == 0 or counter == 1 or counter == 2):
         pass
@@ -42,7 +42,8 @@ for row in wsData.rows:
               'Name' : row[4].value,
               'Years Service' : row[3].value,
               'Industry' : row[7].value,
-              'Location' : locations[row[8].value]
+              'Location' : locations[row[8].value],
+              'Warfare Spec' : row[2].value
             },
             'Years Service' : row[3].value,
             'Name' : row[4].value,
