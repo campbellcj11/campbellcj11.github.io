@@ -6,114 +6,191 @@
     <link href="./src/netjsongraph.css" rel="stylesheet">
     <!-- theme can be easily customized via css -->
     <link href="./src/netjsongraph-theme.css" rel="stylesheet">
-    <style>
-        #network-graph{
-            width: 1000px;
-            height: 800px;
-            margin: 0 auto;
-            border: 1px solid #ccc;
-        }
-        body{ overflow: hidden }
-        .njg-node{ fill: #3182bd }
-        .njg-node.gateway{ fill: #ff8000 !important }
-        .njg-link{ stroke-width: 5px }
-        .njg-link:hover,.njg-link.njg-open{
-            stroke-width: 6px !important;
-            stroke-opacity: 0.7 !important
-        }
-        /* legend */
-        #legend{
-            position: absolute;
-            top: auto;
-            left: 5px;
-            bottom: 5px;
-            width: auto;
-            height: auto;
-            max-width: 250px;
-            padding: 0 15px;
-            background: #fbfbfb;
-            border-radius: 2px;
-            border: 1px solid #ccc;
-            color: #6d6357;
-            font-family: Arial, sans-serif;
-            font-family: sans-serif;
-            font-size: 14px;
-        }
-        #legend p{ line-height: 16px; margin: 10px 0 }
-        #legend span{
-            width: 16px;
-            margin-right: 5px;
-        }
-        #legend span.circle{
-            display: inline-block;
-            border-radius: 50%;
-            height: 16px;
-        }
-        #legend span.link{
-            display: inline-block;
-            height: 5px;
-            border-bottom-width: 6px;
-            border-bottom-style: solid;
-        }
-        #legend .node{ background-color: #3182bd }
-        #legend .gateway{ background-color: #ff8000 }
-    </style>
+    <meta name="description" content="">
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+	<!-- <link rel="stylesheet" href="./css/normalize.css"> -->
+	<link rel="stylesheet" href="./css/stylesheet.css">
+    <link rel="stylesheet" href="./dist/css/selectize.default.css">
+	<script src="js/jquery.min.js"></script>
+	<script src="./dist/js/standalone/selectize.js"></script>
+    <script src="./js/d3.min.js"></script>
 </head>
 <body>
-    <select id="selector" name="select" autofocus="true" onChange="drawStuff.call(this, event);">
-      <option value="None" selected="true">None</option>
-      <option value="Location">Location</option>
-      <option value="YearsOfService">Years of Service</option>
-      <option value="Industry">Industry</option>
-    </select>
-    <div id="network-graph"></div>
-    <!-- <div id="legend">
-        <p><span class="circle node">&nbsp;</span> ordinary node</p>
-        <p><span class="circle gateway">&nbsp;</span> gateway node</p>
-    </div> -->
-    <script src="./lib/d3.min.js"></script>
-    <script src="./src/netjsongraph.js"></script>
-    <script>
-        function drawStuff(event) {
-            //alert(this.options[this.selectedIndex].text);
-            if (this.options[this.selectedIndex].text == "Location")
-            {
-                document.getElementById("network-graph").innerHTML = "";
-                d3.netJsonGraph("./location.json", {
-                    el: "#network-graph",
-                    linkDistance: 100,
-                    charge: -200,
-                    circleRadius: 9,
-                    defaultStyle: false,
-                });
-            }
-            else if (this.options[this.selectedIndex].text == "Years of Service")
-            {
-                document.getElementById("network-graph").innerHTML = "";
-                d3.netJsonGraph("./yearsOfService.json", {
-                    el: "#network-graph",
-                    linkDistance: 150,
-                    charge: -200,
-                    circleRadius: 9,
-                    defaultStyle: false,
-                });
-            }
-            else if (this.options[this.selectedIndex].text == "Industry")
-            {
-                document.getElementById("network-graph").innerHTML = "";
-                d3.netJsonGraph("./industry.json", {
-                    el: "#network-graph",
-                    linkDistance: 100,
-                    charge: -200,
-                    circleRadius: 9,
-                    defaultStyle: false,
-                });
-            }
-            else {
+    <h1> Beyond the Uniform </h1>
+    <h4> By Conor Campbell, Melissa Plakyda, Michael Hauf, and Spencer Nelson </h4>
+    <div class="buttons">
+        <button class="m" value="FindTitles" onclick="buttonClicked('titles')">Find Your Job Title</button>
+        <button class="m" value="FindCompanies" onclick="buttonClicked('companies')">Find Your Companies</button>
+    </div>
+    <div class="selectors" id="selectors">
+    	<div class="control-group">
+    		<label for="select-branch">Branch:</label>
+    		<select id="select-branch" class="selectors-default" placeholder="Select a Warfare Specialty..." onchange="specialitySelected(this);">
+    			<option value="">Select a Warfare Specialty...</option>
+    			<option value="USMC">USMC</option>
+    			<option value="Aviation">Aviation</option>
+    			<option value="SWO">Surface Warefare Officer</option>
+    			<option value="Submarines">Submarines</option>
+    		</select>
+    	</div>
+        <div class="control-group">
+    		<label for="select-yos">Years of Service:</label>
+    		<select id="select-yos" class="selectors-default" placeholder="Select Years of Service..." onchange="yosSelected(this);">
+                <option value="">Select a Warfare Specialty...</option>
+    		</select>
+    	</div>
 
+        <div class="map" id="map">
+        </div>
+
+    	<script>
+        var buttonSelected = "";
+        var speciality = "";
+        var yearsOfService = "";
+        for(var i=1; i<=35; i++){
+            var select = document.getElementById("select-yos");
+            var option = document.createElement("OPTION");
+            if (i == 35) {
+                select.options.add(option);
+            	option.text = i + "+";
+            	option.value = i;
+            } else {
+                select.options.add(option);
+            	option.text = i;
+            	option.value = i;
+            }
+        }
+    	$('#select-branch').selectize({
+    		create: true,
+    		sortField: {
+    			field: 'text',
+    			direction: 'asc'
+    		},
+    		dropdownParent: 'body'
+    	});
+        $('#select-yos').selectize({
+    		create: true,
+    		dropdownParent: 'body'
+    	});
+
+        function clear(elementID)
+        {
+            document.getElementById(elementID).innerHTML = "";
+        }
+
+        function buttonClicked(value)
+        {
+            buttonSelected = value;
+            document.getElementById("selectors").style.visibility = "visible";
+        }
+
+        function specialitySelected(option)
+        {
+            clear("map");
+            speciality = option.options[option.selectedIndex].value;
+            if (yearsOfService !=  "" && speciality != "")
+            {
+                //draw map here
+                drawMap();
             }
         }
 
-    </script>
+        function yosSelected(option)
+        {
+            clear("map");
+            yearsOfService = option.options[option.selectedIndex].value;
+            if (yearsOfService !=  "" && speciality != "")
+            {
+                //draw map here
+                drawMap();
+            }
+        }
+
+        function drawMap()
+        {
+            //SVG setup
+            var height = 400;
+            var width = 500 * 1.21;
+
+            // D3 Projection
+            var projection = d3.geo.albersUsa()
+			   .translate([width/2, height/2])    // translate to center of screen
+			   .scale([750]);          // scale things down so see entire US
+
+            // Define path generator
+            var path = d3.geo.path()               // path generator that will convert GeoJSON to SVG paths
+                .projection(projection);  // tell path generator to use albersUsa projection
+
+            var svg = d3.select("#map")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .append("g");
+
+            d3.csv("USNALinkedInDataScott.csv", function(data) {
+              d3.json("us-states.json", function(json) {
+                  // Loop through each linkedin data value in the .csv file
+                  var originals = 0;
+                  var additions = 0;
+                  for (var i = 0; i < data.length; i++) {
+
+                    var dataState = data[i].SimpleLocation;
+                    var dataSpecialty = data[i].WarfareSpecialty;
+                    //Need to change DC to match geoJSON
+                    if (dataState == "D.C.")
+                    {
+                        dataState = "District of Columbia";
+                    }
+
+                  	//Find the corresponding state inside the GeoJSON
+                  	for (var j = 0; j < json.features.length; j++)  {
+                  		var jsonState = json.features[j].properties.name;
+                  		if (dataState == jsonState && speciality == dataSpecialty) {
+                      		// Copy the data value into the JSON
+                            if (typeof json.features[j].properties.veteranPopulation == "undefined") {
+                               json.features[j].properties.veteranPopulation = 1;
+                            }
+                            else
+                            {
+                                additions++;
+                                json.features[j].properties.veteranPopulation++;
+                            }
+
+                      		// Stop looking through the JSON
+                      		break;
+                  		}
+                  	}
+                  }
+
+                  var max_area = d3.max( json.features, function(d) { return d.properties.veteranPopulation });
+                  var color = d3.scale.linear().domain([0, max_area]).range(['beige', 'red']);
+
+                  svg.selectAll("path")
+                  	.data(json.features)
+                  	.enter()
+                  	.append("path")
+                  	.attr("d", path)
+                  	.style("stroke", "#fff")
+                  	.style("stroke-width", "1")
+                  	.style("fill", function(d) {
+
+                  	// Get data value
+                  	var value = d.properties.veteranPopulation;
+                    //TODO: comment this out
+                    console.log(d.properties.name + " : " + value);
+                    if (typeof value == "undefined")
+                    {
+                        return color(0);
+                    }
+                    else
+                    {
+                        return color(value);
+                    }
+                  });
+              });
+            });
+        }
+    	</script>
+    </div>
 </body>
 </html>
