@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Agricultural Losses 2015</title>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+        <script src="https://d3js.org/topojson.v2.min.js"></script>
+        <script src="http://d3js.org/colorbrewer.v1.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <link rel="stylesheet" href="./stylesheet.css">
+        <meta charset="utf-8"/>
+
+        <script type="text/javascript">
+
+            var myPaths;
+            var margin = {top: 8, right: 8, bottom: 22, left: 75};
+            var svgWidth = 600 - margin.left - margin.right;
+            var svgHeight = 375 - margin.top - margin.bottom;
+            // console.log($(window).height());   // returns height of browser viewport
+            // console.log($(window).width());   // returns width of browser viewport
+
+            function loadData()
+            {
+            //   d3.json("us-10m.json", function(json)
+            //   {
+            //     myPaths = json;
+              //
+            //     createChoroplethMap();
+            //   });
+              createChoroplethMap();
+              createBarChart(-1);
+            }
+
+            function createChoroplethMap() {
+                var svg = d3.select("#map")
+                          .append("svg")
+                          .attr("width", svgWidth + margin.left + margin.right)
+                          .attr("height", svgHeight + margin.top + margin.bottom)
+                          .append("g")
+                          .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                          .on("mouseleave", function(d) {
+                              createBarChart(-1);d
+
+                          });
+
+                var projection = d3.geoAlbersUsa()
+                   .translate([svgWidth/2, svgHeight/2])
+                   .scale([750]);
+
+                var path = d3.geoPath()
+                            .projection(projection);
+
+                // Append Div for tooltip to SVG
+                var div = d3.select("#map")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("opacity", 0);
+
+                d3.csv("./losses2015_transformed.csv", function(data) {
+                d3.json("./us-states.json", function(json) {
+                    // Loop through each linkedin data value in the .csv file
+                    // console.log(json.features[0]);
+                    var originals = 0;
+                    var additions = 0;
+                    var thisObject = {};
+                    for (var i = 0; i < data.length; i++) {
+                        var dataStateID = data[i].State_Code;
+                        var dataDmgDes = data[i].Damage_Descp;
+                        var dataDmgAmt = data[i].Amount;
+                        var dataStateAbv = data[i].State_Abv;
+                        //Find the corresponding state inside the GeoJSON
+                    	for (var j = 0; j < json.features.length; j++)  {
+                    		var jsonStateID = parseInt(json.features[j].id);
+                    		if (jsonStateID == dataStateID) {
+                                // Copy the data value into the JSON
+                                if (typeof json.features[j].properties.sumOfDmg == "undefined") {
+                                 json.features[j].properties.sumOfDmg = parseInt(dataDmgAmt);
+                                 json.features[j].properties.stateID = parseInt(dataStateID);
+                                 json.features[j].properties.abv = parseInt(dataStateAbv);
+                                }
+                                else
+                                {
+                                  json.features[j].properties.sumOfDmg = json.features[j].properties.sumOfDmg + parseInt(dataDmgAmt);
+                                }
+                        		// Stop looking through the JSON
+                        		break;
+                    		}
+                    	}
+                    }
+
+                    //prints out state info
+                    // for (var j = 0; j < json.features.length; j++)  {
+                    //     var jsonStateID = json.features[j].id;
+                    //     var sum = json.features[j].properties.sumOfDmg;
+                    //     console.log(jsonStateID + " : " + sum);
+                    // }
+
+                    var max_area = d3.max( json.features, function(d) { return d.properties.sumOfDmg });
+                    // console.log(max_area);
+                    var color = d3.scaleLinear().domain([0, max_area]).range(['#ece7f2','#a6bddb','#2b8cbe']);
+
+                    svg.selectAll("path")
+                    	.data(json.features)
+                    	.enter()
+                    	.append("path")
+                    	.attr("d", path)
+                    	.style("stroke", "#fff")
+                    	.style("stroke-width", "1")
+                    	.style("fill", function(d) {
+
+                    	// Get data value
+                        var value = d.properties.sumOfDmg;
+                        if (typeof value == "undefined")
+                        {
+                          return color(0);
+                        }
+                        else
+                        {
+                          return color(value);
+                        }
+                    })
+                    .on("mouseover", function(d) {
+                          var tempSum = 0;
+                          if (typeof d.properties.sumOfDmg != "undefined")
+                          {
+                              tempSum = d.properties.sumOfDmg;
+                          }
+                          var displayString = d.properties.name + " Amount: " + tempSum.toString();
+                          div.transition()
+                          	 .duration(200)
+                               .style("opacity", .9);
+                               div.text(displayString)
+                               .style("left", (d3.event.pageX) + "px")
+                               .style("top", (d3.event.pageY - 28) + "px");
+                        //   clear("barChart");
+                        //   createBarChart(d.properties.stateID);
+                	  })
+
+                    .on("mouseout", function(d) {
+                        div.transition()
+                           .duration(500)
+                           .style("opacity", 0);
+                        //clear("barChart");
+                        //createBarChart(-1);
+
+                    })
+                    .on("mouseenter", function(d) {
+                        clear("barChart");
+                        createBarChart(d.properties.stateID);
+
+                    })
+                    .on("mouseleave", function(d) {
+                        clear("barChart");
+                    })
+                    .on("click", function(d) {
+                        console.log("CLICKED");
+                    })
+                });
+                });
+
+            }
+
+            function createBarChart(stateID)
+            {
+                d3.csv("./losses2015_transformed.csv", function(filedata) {
+                    data = [];
+                    var titleNotSet = false;
+                    for (var i = 0; i < filedata.length; i++)
+                    {
+                        indexOfdata = -1;
+                        if (stateID == -1)
+                        {
+                            if (titleNotSet == false)
+                            {
+                                titleText = "<h2 id='barTitle'> Losses 2015 [$] State: All <h2>";
+                                document.getElementById('barChart').innerHTML = titleText;
+                                titleNotSet = true;
+                            }
+                            //collect all data
+                            //check if it exists
+                            var alreadyExists = false;
+                            for (items in data)
+                            {
+                                var tempIndex = data.map(function(x) {return x.label; }).indexOf(filedata[i].Damage_Descp);
+                                if (tempIndex > -1) {
+                                   alreadyExists = true;
+                                   indexOfdata = tempIndex;
+                                   break;
+                                }
+                            }
+                            if (alreadyExists == true)
+                            {
+                                data[indexOfdata].value += parseInt(filedata[i].Amount);
+                            }
+                            else
+                            {
+                                data.push({label: filedata[i].Damage_Descp, value: parseInt(filedata[i].Amount)});
+                            }
+                        }
+                        else
+                        {
+                            if (parseInt(filedata[i].State_Code) == parseInt(stateID))
+                            {
+                                if (titleNotSet == false)
+                                {
+                                    stateAbv = filedata[i].State_Abv;
+                                    titleText = "<h2 id='barTitle'> Losses 2015 [$] State: " + stateAbv + " <h2>";
+                                    document.getElementById('barChart').innerHTML = titleText;
+                                }
+                                var alreadyExists = false;
+                                for (items in data)
+                                {
+                                    var tempIndex = data.map(function(x) {return x.label; }).indexOf(filedata[i].Damage_Descp);
+                                    if (tempIndex > -1) {
+                                       alreadyExists = true;
+                                       indexOfdata = tempIndex;
+                                       break;
+                                    }
+                                }
+                                if (alreadyExists == true)
+                                {
+                                    data[indexOfdata].value += parseInt(filedata[i].Amount);
+                                }
+                                else
+                                {
+                                    data.push({label: filedata[i].Damage_Descp, value: parseInt(filedata[i].Amount)});
+                                }
+                            }
+                        }
+                    }
+                    //Sorting Values
+                    data.sort(function(a, b) {
+                      return a.value - b.value;
+                    });
+                    // for (items in data)
+                    // {
+                    //     console.log(data[items]);
+                    // }
+                    var div = d3.select("#barChart").append("div").attr("class", "barTooltip");
+
+                    var axisMargin = 20,
+                            margin = 10,
+                            valueMargin = 4,
+                            width = parseInt(d3.select('#barChart').style('width'), 10),
+                            height = parseInt(d3.select('#barChart').style('height'), 10),
+                            // width = 600,
+                            // height = 375,
+                            barHeight = (height-axisMargin-margin*2)* 0.9/data.length,
+                            barPadding = (height-axisMargin-margin*2)*0.1/data.length,
+                            data, bar, svg, scale, xAxis, labelWidth = 0;
+
+
+
+                    max = d3.max(data, function(d) { return d.value; });
+                    svg = d3.select("#barChart")
+                            .append("svg")
+                            .attr("width", width)
+                            .attr("height", height);
+
+
+                    bar = svg.selectAll("g")
+                            .data(data)
+                            .enter()
+                            .append("g");
+
+                    bar.attr("class", "bar")
+                            .attr("cx",0)
+                            .attr("transform", function(d, i) {
+                                return "translate(" + margin + "," + (i * (barHeight + barPadding) + barPadding) + ")";
+                            });
+
+                    bar.append("text")
+                            .attr("class", "label")
+                            .attr("y", barHeight / 2)
+                            .attr("dy", ".35em") //vertical align middle
+                            .text(function(d){
+                                return d.label;
+                            }).each(function() {
+                        labelWidth = Math.ceil(Math.max(labelWidth, this.getBBox().width));
+                    });
+
+                    scale = d3.scaleLinear()
+                            .domain([0, max])
+                            .range([0, width - margin*2 - labelWidth]);
+
+                    xAxis = d3.axisBottom(scale)
+                            .scale(scale)
+                            .tickSize(-height + 2*margin + axisMargin)
+                            .tickFormat(d3.format(".3s"));
+
+
+                    bar.append("rect")
+                            .attr("transform", "translate("+labelWidth+", 0)")
+                            .attr("height", barHeight)
+                            .attr("width", function(d){
+                                return scale(d.value);
+                            });
+
+                    bar.on("mousemove", function(d){
+                            div.style("left", d3.event.pageX+10+"px");
+                            div.style("top", d3.event.pageY-25+"px");
+                            div.style("display", "inline-block");
+                            div.html((d.label)+":<br>"+(d.value));
+                        });
+
+                    bar.on("mouseout", function(d){
+                            div.style("display", "none");
+                        });
+
+                    svg.insert("g",":first-child")
+                            .attr("class", "axisHorizontal")
+                            .attr("transform", "translate(" + (margin + labelWidth) + ","+ (height - axisMargin - margin)+")")
+                            .call(xAxis);
+                });
+            }
+
+            function clear(elementID)
+            {
+                document.getElementById(elementID).innerHTML = "";
+            }
+
+            window.onload = loadData;
+
+        </script>
+
+
+    </head>
+
+
+    <body>
+        <h1> Agricultural Losses 2015 </h1>
+        <div class="whole" id="whole">
+            <div class="map" id="map">
+                <h2> Losses 2015 [$] Damage Type: All <h2>
+            </div>
+            <div class="barChart" id="barChart">
+                <h2 id='barTitle' class='barTitle'> Losses 2015 [$] State: All <h2>
+            </div>
+        </div>
+    </body>
+</html>
