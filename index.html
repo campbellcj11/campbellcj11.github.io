@@ -26,7 +26,7 @@
     	<div class="control-group">
     		<label for="select-branch">Branch:</label>
     		<select id="select-branch" class="selectors-default" placeholder="Select a Warfare Specialty..." onchange="specialitySelected(this);">
-    			<option value="">Select a Warfare Specialty...</option>
+    			<option value="" id="default">Select a Warfare Specialty...</option>
     			<option value="USMC">USMC</option>
     			<option value="Aviation">Aviation</option>
     			<option value="SWO">Surface Warefare Officer</option>
@@ -36,7 +36,7 @@
         <div class="control-group">
     		<label for="select-yos">Years of Service:</label>
     		<select id="select-yos" class="selectors-default" placeholder="Select Years of Service..." onchange="yosSelected(this);">
-                <option value="">Select a Warfare Specialty...</option>
+                <option value="" id="default">Select a Warfare Specialty...</option>
     		</select>
     	</div>
 
@@ -73,6 +73,12 @@
     		dropdownParent: 'body'
     	});
 
+        function resetSelections()
+        {
+            //TODO: figure this out
+            console.log("CLICKED");
+        }
+
         function clear(elementID)
         {
             document.getElementById(elementID).innerHTML = "";
@@ -80,6 +86,8 @@
 
         function buttonClicked(value)
         {
+            clear("map");
+            resetSelections();
             buttonSelected = value;
             document.getElementById("selectors").style.visibility = "visible";
         }
@@ -127,13 +135,29 @@
                 .attr("height", height)
                 .append("g");
 
+            // Append Div for tooltip to SVG
+            var div = d3.select("#map")
+    		    .append("div")
+        		.attr("class", "tooltip")
+        		.style("opacity", 0);
+
             d3.csv("USNALinkedInDataScott.csv", function(data) {
               d3.json("us-states.json", function(json) {
                   // Loop through each linkedin data value in the .csv file
                   var originals = 0;
                   var additions = 0;
+                  var thisObject = {};
                   for (var i = 0; i < data.length; i++) {
 
+                    var years = data[i].YearsService;
+                    if (typeof thisObject[years] == "undefined")
+                    {
+                        thisObject[years] = 1;
+                    }
+                    else
+                    {
+                        thisObject[years]++;
+                    }
                     var dataState = data[i].SimpleLocation;
                     var dataSpecialty = data[i].WarfareSpecialty;
                     //Need to change DC to match geoJSON
@@ -161,7 +185,7 @@
                   		}
                   	}
                   }
-
+                  console.log(thisObject);
                   var max_area = d3.max( json.features, function(d) { return d.properties.veteranPopulation });
                   var color = d3.scale.linear().domain([0, max_area]).range(['beige', 'red']);
 
@@ -176,8 +200,6 @@
 
                   	// Get data value
                   	var value = d.properties.veteranPopulation;
-                    //TODO: comment this out
-                    console.log(d.properties.name + " : " + value);
                     if (typeof value == "undefined")
                     {
                         return color(0);
@@ -186,8 +208,87 @@
                     {
                         return color(value);
                     }
-                  });
+                  })
+                  .on("mouseover", function(d) {
+                    var tempPop = 0;
+                    if (typeof d.properties.veteranPopulation != "undefined")
+                    {
+                        tempPop = d.properties.veteranPopulation;
+                    }
+                    var displayString = d.properties.name + " Veteran Population: " + tempPop.toString();
+                    div.transition()
+                    	 .duration(200)
+                         .style("opacity", .9);
+                         div.text(displayString)
+                         .style("left", (d3.event.pageX) + "px")
+                         .style("top", (d3.event.pageY - 28) + "px");
+              	  })
+
+                  // fade out tooltip on mouse out
+                  .on("mouseout", function(d) {
+                      div.transition()
+                         .duration(500)
+                         .style("opacity", 0);
+                  })
+                  .on("click", function(d) {
+                      console.log("CLICKED");
+                  })
               });
+            });
+        }
+
+        function drawPieChartIndustry()
+        {
+            //SVG setup
+            var height = 400;
+            var width = 500 * 1.21;
+
+            // var svg = d3.select("#map"),
+            // width = +svg.attr("width"),
+            // height = +svg.attr("height"),
+            // radius = Math.min(width, height) / 2,
+            // g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+            //TODO: fix this!!!!
+            var svg = d3.select("#map")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                radius = Math.min(width, height) / 2,
+                g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+            var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+            var pie = d3.pie()
+                .sort(null)
+                .value(function(d) { return d.population; });
+
+            var path = d3.arc()
+                .outerRadius(radius - 10)
+                .innerRadius(0);
+
+            var label = d3.arc()
+                .outerRadius(radius - 40)
+                .innerRadius(radius - 40);
+
+            d3.csv("data.csv", function(d) {
+              d.population = +d.population;
+              return d;
+            }, function(error, data) {
+              if (error) throw error;
+
+              var arc = g.selectAll(".arc")
+                .data(pie(data))
+                .enter().append("g")
+                  .attr("class", "arc");
+
+              arc.append("path")
+                  .attr("d", path)
+                  .attr("fill", function(d) { return color(d.data.age); });
+
+              arc.append("text")
+                  .attr("transform", function(d) { return "translate(" + label.centroid(d) + ")"; })
+                  .attr("dy", "0.35em")
+                  .text(function(d) { return d.data.age; });
             });
         }
     	</script>

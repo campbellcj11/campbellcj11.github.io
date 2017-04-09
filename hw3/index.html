@@ -14,17 +14,9 @@
             var margin = {top: 8, right: 8, bottom: 22, left: 75};
             var svgWidth = 600 - margin.left - margin.right;
             var svgHeight = 375 - margin.top - margin.bottom;
-            // console.log($(window).height());   // returns height of browser viewport
-            // console.log($(window).width());   // returns width of browser viewport
 
             function loadData()
             {
-            //   d3.json("us-10m.json", function(json)
-            //   {
-            //     myPaths = json;
-              //
-            //     createChoroplethMap();
-            //   });
               createChoroplethMap();
               createBarChart(-1);
             }
@@ -48,7 +40,6 @@
                 var path = d3.geoPath()
                             .projection(projection);
 
-                // Append Div for tooltip to SVG
                 var div = d3.select("#map")
                   .append("div")
                   .attr("class", "tooltip")
@@ -85,13 +76,6 @@
                     		}
                     	}
                     }
-
-                    //prints out state info
-                    // for (var j = 0; j < json.features.length; j++)  {
-                    //     var jsonStateID = json.features[j].id;
-                    //     var sum = json.features[j].properties.sumOfDmg;
-                    //     console.log(jsonStateID + " : " + sum);
-                    // }
 
                     var max_area = d3.max( json.features, function(d) { return d.properties.sumOfDmg });
                     // console.log(max_area);
@@ -138,8 +122,6 @@
                         div.transition()
                            .duration(500)
                            .style("opacity", 0);
-                        //clear("barChart");
-                        //createBarChart(-1);
 
                     })
                     .on("mouseenter", function(d) {
@@ -226,14 +208,12 @@
                             }
                         }
                     }
+
                     //Sorting Values
                     data.sort(function(a, b) {
                       return a.value - b.value;
                     });
-                    // for (items in data)
-                    // {
-                    //     console.log(data[items]);
-                    // }
+
                     var div = d3.select("#barChart").append("div").attr("class", "barTooltip");
 
                     var axisMargin = 20,
@@ -241,12 +221,9 @@
                             valueMargin = 4,
                             width = parseInt(d3.select('#barChart').style('width'), 10),
                             height = parseInt(d3.select('#barChart').style('height'), 10),
-                            // width = 600,
-                            // height = 375,
                             barHeight = (height-axisMargin-margin*2)* 0.9/data.length,
                             barPadding = (height-axisMargin-margin*2)*0.1/data.length,
                             data, bar, svg, scale, xAxis, labelWidth = 0;
-
 
 
                     max = d3.max(data, function(d) { return d.value; });
