@@ -47,6 +47,8 @@
         var buttonSelected = "";
         var speciality = "";
         var yearsOfService = "";
+
+        /* Populate years of service options. */
         for(var i=1; i<=35; i++){
             var select = document.getElementById("select-yos");
             var option = document.createElement("OPTION");
@@ -60,6 +62,8 @@
             	option.value = i;
             }
         }
+
+        /* Add selectize dropdown to these select html objects (Makes it look nice) */
     	$('#select-branch').selectize({
     		create: true,
     		sortField: {
@@ -73,17 +77,20 @@
     		dropdownParent: 'body'
     	});
 
+        /* This function should reset YOS and branch so the user needs to reenter them. */
         function resetSelections()
         {
             //TODO: figure this out
             console.log("CLICKED");
         }
 
+        /* Clears any html from an object */
         function clear(elementID)
         {
             document.getElementById(elementID).innerHTML = "";
         }
 
+        /* One of the top two buttons clicked. */
         function buttonClicked(value)
         {
             clear("map");
@@ -92,28 +99,29 @@
             document.getElementById("selectors").style.visibility = "visible";
         }
 
+        /* Function called when speciality selected. */
         function specialitySelected(option)
         {
             clear("map");
             speciality = option.options[option.selectedIndex].value;
             if (yearsOfService !=  "" && speciality != "")
             {
-                //draw map here
                 drawMap();
             }
         }
 
+        /* Function called when YOS selected. */
         function yosSelected(option)
         {
             clear("map");
             yearsOfService = option.options[option.selectedIndex].value;
             if (yearsOfService !=  "" && speciality != "")
             {
-                //draw map here
                 drawMap();
             }
         }
 
+        /* Use D3 to draw choropleth map that colors map according to YOS and speciality. */
         function drawMap()
         {
             //SVG setup
@@ -231,6 +239,7 @@
                          .style("opacity", 0);
                   })
                   .on("click", function(d) {
+                      //TODO: make pie chart show up once this works
                       console.log("CLICKED");
                   })
               });
