@@ -13,7 +13,9 @@
     <link rel="stylesheet" href="./dist/css/selectize.default.css">
 	<script src="js/jquery.min.js"></script>
 	<script src="./dist/js/standalone/selectize.js"></script>
-    <script src="./js/d3.min.js"></script>
+    <!-- <script src="./js/d3.min.js"></script> -->
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="./js/colorbrewer.js"></script>
 </head>
 <body>
     <h1> Beyond the Uniform </h1>
@@ -40,8 +42,8 @@
     		</select>
     	</div>
 
-        <div class="map" id="map">
-        </div>
+        <div class="map" id="map"></div>
+        <div class="pie" id="pie"></div>
 
     	<script>
         var buttonSelected = "";
@@ -81,7 +83,12 @@
         function resetSelections()
         {
             //TODO: figure this out
-            console.log("CLICKED");
+            var $branch = $('#select-branch').selectize();
+            var controlbranch = $branch[0].selectize;
+            controlbranch.clear();
+            var $yos = $('#select-yos').selectize();
+            var controlyos = $yos[0].selectize;
+            controlyos.clear();
         }
 
         /* Clears any html from an object */
@@ -104,9 +111,13 @@
         {
             clear("map");
             speciality = option.options[option.selectedIndex].value;
-            if (yearsOfService !=  "" && speciality != "")
+            if (yearsOfService !=  "" && speciality != "" && buttonSelected == "titles")
             {
                 drawMap();
+            }
+            else if (yearsOfService !=  "" && speciality != "" && buttonSelected == "companies")
+            {
+                //TODO: right side of path from sheet
             }
         }
 
@@ -129,12 +140,12 @@
             var width = 500 * 1.21;
 
             // D3 Projection
-            var projection = d3.geo.albersUsa()
+            var projection = d3.geoAlbersUsa()
 			   .translate([width/2, height/2])
 			   .scale([750]);
 
             // Define path generator
-            var path = d3.geo.path()
+            var path = d3.geoPath()
                 .projection(projection);
 
             var svg = d3.select("#map")
@@ -240,14 +251,15 @@
                   {
                       return (d.properties.veteranPopulation + (d.properties.yearsScore * 2))
                   });
-                  var color = d3.scale.linear().domain([0, max_area]).range(['beige', 'red']);
+                //   var color = d3.scaleLinear().domain([0, max_area]).range(['beige', 'red']);
+                  var color = d3.scaleLinear().domain([0, max_area]).range(['#ece7f2','#2b8cbe']);
 
                   svg.selectAll("path")
                   	.data(json.features)
                   	.enter()
                   	.append("path")
                   	.attr("d", path)
-                  	.style("stroke", "#fff")
+                  	.style("stroke", "#000000")
                   	.style("stroke-width", "1")
                   	.style("fill", function(d) {
 
@@ -306,31 +318,26 @@
                          .style("opacity", 0);
                   })
                   .on("click", function(d) {
-                      //TODO: make pie chart show up once this works
-                    //   console.log("CLICKED");
+                    clear("pie");
+                    drawPieChartIndustry(d.properties.name);
                   })
               });
             });
         }
 
-        function drawPieChartIndustry()
+        function drawPieChartIndustry(name)
         {
-            //SVG setup
-            var height = 400;
-            var width = 500 * 1.21;
+            var height = 375;
+            var width = 720;
 
-            // var svg = d3.select("#map"),
-            // width = +svg.attr("width"),
-            // height = +svg.attr("height"),
-            // radius = Math.min(width, height) / 2,
-            // g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
-            //TODO: fix this!!!!
-            var svg = d3.select("#map")
+            var radius = Math.min(width, height) / 2;
+
+            var svg = d3.select("#pie")
                 .append("svg")
                 .attr("width", width)
                 .attr("height", height)
-                radius = Math.min(width, height) / 2,
-                g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+                .append("g")
+                .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
             var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
@@ -346,26 +353,51 @@
                 .outerRadius(radius - 40)
                 .innerRadius(radius - 40);
 
-            d3.csv("data.csv", function(d) {
-              d.population = +d.population;
-              return d;
-            }, function(error, data) {
-              if (error) throw error;
 
-              var arc = g.selectAll(".arc")
-                .data(pie(data))
-                .enter().append("g")
-                  .attr("class", "arc");
+            d3.csv("USNALinkedInDataScott.csv", function(linkedInData) {
+                data = [];
+                for (var i = 0; i < linkedInData.length; i++)
+                {
+                    if (linkedInData[i].SimpleLocation == name) {
+                        data.push(linkedInData[i]);
+                    }
+                }
 
-              arc.append("path")
-                  .attr("d", path)
-                  .attr("fill", function(d) { return color(d.data.age); });
+                var arc = svg.selectAll(".arc")
+                  .data(pie(data))
+                  .enter().append("g")
+                    .attr("class", "arc");
 
-              arc.append("text")
-                  .attr("transform", function(d) { return "translate(" + label.centroid(d) + ")"; })
-                  .attr("dy", "0.35em")
-                  .text(function(d) { return d.data.age; });
+                arc.append("path")
+                    .attr("d", path)
+                    .attr("fill", function(d) { return color(d.data.Industry); });
+
+                arc.append("text")
+                    .attr("transform", function(d) { return "translate(" + label.centroid(d) + ")"; })
+                    .attr("dy", "0.35em")
+                    .text(function(d) { return d.data.Industry; });
             });
+
+            // d3.csv("data.csv", function(d) {
+            //   d.population = +d.population;
+            //   return d;
+            // }, function(error, data) {
+            //   if (error) throw error;
+            //
+            //   var arc = svg.selectAll(".arc")
+            //     .data(pie(data))
+            //     .enter().append("g")
+            //       .attr("class", "arc");
+            //
+            //   arc.append("path")
+            //       .attr("d", path)
+            //       .attr("fill", function(d) { return color(d.data.age); });
+            //
+            //   arc.append("text")
+            //       .attr("transform", function(d) { return "translate(" + label.centroid(d) + ")"; })
+            //       .attr("dy", "0.35em")
+            //       .text(function(d) { return d.data.age; });
+            // });
         }
     	</script>
     </div>
