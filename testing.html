@@ -18,41 +18,32 @@
     <script src="./js/colorbrewer.js"></script>
 </head>
 <body>
-    <div class="options">
-        <h1> Beyond the Uniform </h1>
-        <h4> By Conor Campbell, Melissa Plakyda, Michael Hauf, and Spencer Nelson </h4>
-        <div class="buttons">
-            <button class="m" value="FindTitles" onclick="buttonClicked('titles')">Find Your Job Title</button>
-            <button class="m" value="FindCompanies" onclick="buttonClicked('companies')">Find Your Companies</button>
-        </div>
-        <div class="selectors" id="selectors">
-        	<div class="control-group">
-        		<label for="select-branch">Branch:</label>
-        		<select id="select-branch" class="selectors-default" placeholder="Select a Warfare Specialty..." onchange="specialitySelected(this);">
-        			<option value="" id="default">Select a Warfare Specialty...</option>
-        			<option value="USMC">USMC</option>
-        			<option value="Aviation">Aviation</option>
-        			<option value="SWO">Surface Warefare Officer</option>
-        			<option value="Submarines">Submarines</option>
-        		</select>
-        	</div>
-            <div class="control-group">
-        		<label for="select-yos">Years of Service:</label>
-        		<select id="select-yos" class="selectors-default" placeholder="Select Years of Service..." onchange="yosSelected(this);">
-                    <option value="" id="default">Select a Warfare Specialty...</option>
-        		</select>
-        	</div>
-        </div>
+    <h1> Beyond the Uniform </h1>
+    <h4> By Conor Campbell, Melissa Plakyda, Michael Hauf, and Spencer Nelson </h4>
+    <div class="buttons">
+        <button class="m" value="FindTitles" onclick="buttonClicked('titles')">Find Your Job Title</button>
+        <button class="m" value="FindCompanies" onclick="buttonClicked('companies')">Find Your Companies</button>
     </div>
+    <div class="selectors" id="selectors">
+    	<div class="control-group">
+    		<label for="select-branch">Branch:</label>
+    		<select id="select-branch" class="selectors-default" placeholder="Select a Warfare Specialty..." onchange="specialitySelected(this);">
+    			<option value="" id="default">Select a Warfare Specialty...</option>
+    			<option value="USMC">USMC</option>
+    			<option value="Aviation">Aviation</option>
+    			<option value="SWO">Surface Warefare Officer</option>
+    			<option value="Submarines">Submarines</option>
+    		</select>
+    	</div>
+        <div class="control-group">
+    		<label for="select-yos">Years of Service:</label>
+    		<select id="select-yos" class="selectors-default" placeholder="Select Years of Service..." onchange="yosSelected(this);">
+                <option value="" id="default">Select a Warfare Specialty...</option>
+    		</select>
+    	</div>
 
-    <div class="map" id="map"></div>
-    <div class="pie" id="pie">
-        <div class="legend" id="legend"></div>
-    </div>
-    <div class="list" id="list">
-    </div>
-
-
+        <div class="map" id="map"></div>
+        <div class="pie" id="pie"></div>
 
     	<script>
         var buttonSelected = "";
@@ -110,8 +101,6 @@
         function buttonClicked(value)
         {
             clear("map");
-            clear("pie");
-            clear("list");
             resetSelections();
             buttonSelected = value;
             document.getElementById("selectors").style.visibility = "visible";
@@ -121,7 +110,6 @@
         function specialitySelected(option)
         {
             clear("map");
-            clear("pie");
             speciality = option.options[option.selectedIndex].value;
             if (yearsOfService !=  "" && speciality != "" && buttonSelected == "titles")
             {
@@ -137,7 +125,6 @@
         function yosSelected(option)
         {
             clear("map");
-            clear("pie");
             yearsOfService = option.options[option.selectedIndex].value;
             if (yearsOfService !=  "" && speciality != "" && buttonSelected == "titles")
             {
@@ -336,7 +323,6 @@
                   })
                   .on("click", function(d) {
                     clear("pie");
-                    clear("list");
                     drawPieChartIndustry(d.properties.name);
                   })
               });
@@ -345,18 +331,17 @@
 
         function drawPieChartIndustry(name)
         {
-            d3.json("industries.json", function(json) {
+            d3.json("test.json", function(json) {
                 var height = 375;
                 var width = 720;
 
                 var radius = Math.min(width, height) / 2;
                 var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
                 data = [];
-                lengthOfData = 0;
                 for (items in json[name])
                 {
+                    // console.log(items + " " + json[name][items]);
                     data.push({"label" : items, "value" : json[name][items]});
-                    lengthOfData += 1;
                 }
 
                 var color = d3.scaleOrdinal(d3.schemeCategory20b);
@@ -377,12 +362,6 @@
                   .value(function(d) { return d.value; })
                   .sort(null);
 
-                // Append Div for tooltip to SVG
-                var div = d3.select("#pie")
-          		  .append("div")
-                  .attr("class", "pie-tooltip")
-              	  .style("opacity", 0);
-
                 var path = svg.selectAll('path')
                   .data(pie(data))
                   .enter()
@@ -390,140 +369,10 @@
                   .attr('d', arc)
                   .attr('fill', function(d) {
                     return color(d.data.label);
-                })
-                .on("mouseover", function(d) {
-                  var displayString = d.data.label;
-                  var total = d3.sum(data.map(function(d) {
-                    return d.value;
-                  }));
-                  var percent = Math.round(1000 * d.data.value / total) / 10;
-                  displayString += "<br>Percent: " + percent + "%";
-
-                  div.transition()
-                       .duration(200)
-                       .style("opacity", .9);
-                       div.html(displayString)
-                       .style("left", (d3.event.pageX) + "px")
-                       .style("top", (d3.event.pageY - 28) + "px");
-                })
-                .on("mouseout", function(d) {
-                    div.transition()
-                       .duration(500)
-                       .style("opacity", 0);
-                })
-                .on("click", function(d) {
-                  clear("list");
-                  getJobTitles(name, d.data.label);
-                })
-            });
-        }
-
-        function getJobTitles(stateName, industry)
-        {
-            d3.csv("USNALinkedInDataScott.csv", function(data) {
-                possibleHeadlines = [];
-                for (var i = 0; i < data.length; i++)
-                {
-                    if (data[i].Industry == industry && data[i].SimpleLocation == stateName)
-                    {
-                        if (data[i].CurrentCompanies != "")
-                        {
-                            possibleHeadlines.push(data[i].Headline + " - " + data[i].CurrentCompanies);
-                        }
-                        else
-                        {
-                            possibleHeadlines.push(data[i].Headline);
-                        }
-                    }
-                }
-                var header = "<h2> Possible Job Title(s) in " + stateName + ":" + " </h2>";
-                var str = "<ul class='jobHeadlines' style='position:relative; bottom:0px; font: 13px sans-serif'>";
-                for(var i in possibleHeadlines){
-                    if (possibleHeadlines[i] != "--")
-                    {
-                        str += "<li>"+ possibleHeadlines[i] + "</li>";
-                    }
-                }
-                str += '</ul>';
-                $('#list').append(header);
-                $('#list').append(str);
-            });
-        }
-
-        function pieChartFirst()
-        {
-            d3.json("USNALinkedInDataScott.csv", function(json) {
-                var height = 375;
-                var width = 720;
-
-                var radius = Math.min(width, height) / 2;
-                var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
-                data = [];
-                lengthOfData = 0;
-                for (items in json[name])
-                {
-                    data.push({"label" : items, "value" : json[name][items]});
-                    lengthOfData += 1;
-                }
-
-                var color = d3.scaleOrdinal(d3.schemeCategory20b);
-
-                var svg = d3.select('#pie')
-                  .append('svg')
-                  .attr('width', width)
-                  .attr('height', height)
-                  .append('g')
-                  .attr('transform', 'translate(' + (width / 2) +
-                    ',' + (height / 2) + ')');
-
-                var arc = d3.arc()
-                  .innerRadius(0)
-                  .outerRadius(radius);
-
-                var pie = d3.pie()
-                  .value(function(d) { return d.value; })
-                  .sort(null);
-
-                // Append Div for tooltip to SVG
-                var div = d3.select("#pie")
-          		  .append("div")
-                  .attr("class", "pie-tooltip")
-              	  .style("opacity", 0);
-
-                var path = svg.selectAll('path')
-                  .data(pie(data))
-                  .enter()
-                  .append('path')
-                  .attr('d', arc)
-                  .attr('fill', function(d) {
-                    return color(d.data.label);
-                })
-                .on("mouseover", function(d) {
-                  var displayString = d.data.label;
-                  var total = d3.sum(data.map(function(d) {
-                    return d.value;
-                  }));
-                  var percent = Math.round(1000 * d.data.value / total) / 10;
-                  displayString += "<br>Percent: " + percent + "%";
-
-                  div.transition()
-                       .duration(200)
-                       .style("opacity", .9);
-                       div.html(displayString)
-                       .style("left", (d3.event.pageX) + "px")
-                       .style("top", (d3.event.pageY - 28) + "px");
-                })
-                .on("mouseout", function(d) {
-                    div.transition()
-                       .duration(500)
-                       .style("opacity", 0);
-                })
-                .on("click", function(d) {
-                  clear("list");
-                  getJobTitles(name, d.data.label);
-                })
+                });
             });
         }
     	</script>
+    </div>
 </body>
 </html>
