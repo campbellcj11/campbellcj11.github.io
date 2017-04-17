@@ -129,7 +129,7 @@
             }
             else if (yearsOfService !=  "" && speciality != "" && buttonSelected == "companies")
             {
-                //TODO: right side of path from sheet
+                pieChartFirst();
             }
         }
 
@@ -145,7 +145,7 @@
             }
             else if (yearsOfService !=  "" && speciality != "" && buttonSelected == "companies")
             {
-                //TODO: right side of path from sheet - pie chart i think?
+                pieChartFirst();
             }
         }
 
@@ -240,7 +240,7 @@
                   	}
                   }
 
-                  //Populate years score
+                  //Populate years score - uses the formula 8 years within limit
                   for (var j = 0; j < json.features.length; j++)  {
                       var yearsArray = json.features[j].properties.yearsOfServiceArray;
                       var range = 8;
@@ -337,6 +337,10 @@
                   .on("click", function(d) {
                     clear("pie");
                     clear("list");
+                    if (d.properties.name == "District of Columbia")
+                    {
+                        d.properties.name = "D.C.";
+                    }
                     drawPieChartIndustry(d.properties.name);
                   })
               });
@@ -358,6 +362,7 @@
                     data.push({"label" : items, "value" : json[name][items]});
                     lengthOfData += 1;
                 }
+                console.log(data);
 
                 var color = d3.scaleOrdinal(d3.schemeCategory20b);
 
@@ -452,23 +457,39 @@
 
         function pieChartFirst()
         {
-            d3.json("USNALinkedInDataScott.csv", function(json) {
+            d3.csv("USNALinkedInDataScott.csv", function(data) {
                 var height = 375;
                 var width = 720;
 
                 var radius = Math.min(width, height) / 2;
                 var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
-                data = [];
-                lengthOfData = 0;
-                for (items in json[name])
+
+                var dataToDisplay = [];
+                var tempObject = {};
+                for (var i = 0; i < data.length; i++)
                 {
-                    data.push({"label" : items, "value" : json[name][items]});
-                    lengthOfData += 1;
+                    var currentYOS = data[i].YearsService;
+                    var currentBranch = data[i].WarfareSpecialty;
+                    if (Math.abs(currentYOS - yearsOfService) <= 1 && currentBranch == speciality)
+                    {
+                        if (data[i].Industry in tempObject)
+                        {
+                            tempObject[data[i].Industry] += 1;
+                        }
+                        else
+                        {
+                            tempObject[data[i].Industry] = 1;
+                        }
+                    }
+                }
+                for (items in tempObject)
+                {
+                    dataToDisplay.push({"label" : items, "value" : tempObject[items]});
                 }
 
                 var color = d3.scaleOrdinal(d3.schemeCategory20b);
 
-                var svg = d3.select('#pie')
+                var svg = d3.select('#map')
                   .append('svg')
                   .attr('width', width)
                   .attr('height', height)
@@ -485,13 +506,13 @@
                   .sort(null);
 
                 // Append Div for tooltip to SVG
-                var div = d3.select("#pie")
+                var div = d3.select("#map")
           		  .append("div")
                   .attr("class", "pie-tooltip")
               	  .style("opacity", 0);
 
                 var path = svg.selectAll('path')
-                  .data(pie(data))
+                  .data(pie(dataToDisplay))
                   .enter()
                   .append('path')
                   .attr('d', arc)
@@ -500,7 +521,7 @@
                 })
                 .on("mouseover", function(d) {
                   var displayString = d.data.label;
-                  var total = d3.sum(data.map(function(d) {
+                  var total = d3.sum(dataToDisplay.map(function(d) {
                     return d.value;
                   }));
                   var percent = Math.round(1000 * d.data.value / total) / 10;
