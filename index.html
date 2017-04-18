@@ -54,6 +54,7 @@
         var buttonSelected = "";
         var speciality = "";
         var yearsOfService = "";
+        var currentCSVData = "";
 
         /* Populate years of service options. */
         for(var i=1; i<=35; i++){
@@ -148,7 +149,7 @@
         /* Use D3 to draw choropleth map that colors map according to YOS and speciality. */
         function drawMap()
         {
-            var header = "<h2>Choropleth Color Encoded Map" + "</h2>";
+            var header = "<h2>Map of Veteran Placement" + "</h2>";
             $('#map').append(header);
             //SVG setup
             var height = 400;
@@ -451,6 +452,7 @@
                 }
                 var header = "<h2> Possible Job Title(s) in " + stateName + ":" + " </h2>";
                 var str = "<ul class='jobHeadlines' style='position:relative; bottom:0px; font: 13px sans-serif'>";
+                var exportButton = "<button class='m' value='export' onclick='exportToCSV()'>Export</button>"
                 for(var i in possibleHeadlines){
                     if (possibleHeadlines[i].headline != "--")
                     {
@@ -474,6 +476,20 @@
                 str += '</ul>';
                 $('#list').append(header);
                 $('#list').append(str);
+                $('#list').append(exportButton);
+
+                //lets export data here
+                var csvData = [["Headline", "Company", "Company Link"]];
+                for (items in possibleHeadlines)
+                {
+                    nextElement = [];
+                    nextElement.push(typeof possibleHeadlines[items].headline == "undefined" ? "" : possibleHeadlines[items].headline);
+                    nextElement.push(typeof possibleHeadlines[items].company == "undefined" ? "" : possibleHeadlines[items].company);
+                    nextElement.push(typeof possibleHeadlines[items].link == "undefined" ? "" : possibleHeadlines[items].link);
+                    csvData.push(nextElement);
+                }
+                console.log(csvData);
+                currentCSVData = csvData;
             });
         }
 
@@ -486,7 +502,6 @@
                 var width = 550;
 
                 var radius = Math.min(width, height) / 2;
-                // var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
                 var dataToDisplay = [];
                 var tempObject = {};
@@ -603,6 +618,7 @@
 
                 var header = "<h2> Possible Comapany/Companies within " + industry + ":" + " </h2>";
                 var str = "<ul class='comapanyTitles' style='position:relative; bottom:0px; font: 13px sans-serif; text-align: left'>";
+                var exportButton = "<button class='m' value='export' onclick='exportToCSV()'>Export</button>"
                 for(var i in possibleHeadlines){
                     if (possibleHeadlines[i].headline != "--")
                     {
@@ -619,36 +635,39 @@
                 str += '</ul>';
                 $('#pie').append(header);
                 $('#pie').append(str);
+                $('#pie').append(exportButton);
 
                 //lets export data here
-                // var headers = ["Company", "Company Link", "Headline"];
-                // data = [];
-                // for (items in possibleHeadlines)
-                // {
-                //     if (typeof possibleHeadlines[items].headline == "undefined")
-                //     {
-                //
-                //     }
-                //     else
-                //     {
-                //
-                //     }
-                // }
-                // var data = [["name1", "city1", "some other info"], ["name2", "city2", "more info"]];
-                // var csvContent = "data:text/csv;charset=utf-8,";
-                // data.forEach(function(infoArray, index){
-                //    dataString = infoArray.join(",");
-                //    csvContent += index < data.length ? dataString+ "\n" : dataString;
-                //
-                // });
-                // exportToCSV(csvContent);
-
+                var csvData = [["Company", "Company Link", "Headline"]];
+                for (items in possibleHeadlines)
+                {
+                    nextElement = [];
+                    if (typeof possibleHeadlines[items].headline == "undefined")
+                    {
+                        nextElement.push(possibleHeadlines[items].company);
+                        nextElement.push(possibleHeadlines[items].link);
+                        nextElement.push("");
+                    }
+                    else
+                    {
+                        nextElement.push(possibleHeadlines[items].company);
+                        nextElement.push(possibleHeadlines[items].link);
+                        nextElement.push("");
+                    }
+                    csvData.push(nextElement);
+                }
+                currentCSVData = csvData;
             });
         }
 
-        function exportToCSV(csvData)
+        function exportToCSV()
         {
-            var encodedUri = encodeURI(csvData);
+            var csvContent = "data:text/csv;charset=utf-8,";
+            currentCSVData.forEach(function(infoArray, index){
+               dataString = infoArray.join(",");
+               csvContent += index < currentCSVData.length ? dataString+ "\n" : dataString;
+            });
+            var encodedUri = encodeURI(csvContent);
             window.open(encodedUri);
         }
     	</script>
