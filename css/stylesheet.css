@@ -1,12 +1,14 @@
 div.map
 {
-	width: 50%;
+	width: 45%;
 	float:right;
 	height: 450px;
+	padding-right: 15px;
 }
 
 div.pie
 {
+	text-align:center;
 	width: 50%;
 	float: left;
 	height: 450px;
@@ -18,9 +20,10 @@ div.legend {
 }
 
 div.options {
-	width:50%;
+	width:45%;
 	height: 450px;
 	float:left;
+	padding-left: 15px;
 }
 
 div.list {

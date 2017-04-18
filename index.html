@@ -51,9 +51,6 @@
     </div>
     <div class="list" id="list">
     </div>
-
-
-
     	<script>
         var buttonSelected = "";
         var speciality = "";
@@ -349,6 +346,8 @@
 
         function drawPieChartIndustry(name)
         {
+            var header = "<h2> Click to see possible job titles" + "</h2>";
+            $('#pie').append(header);
             d3.json("industries.json", function(json) {
                 var height = 375;
                 var width = 720;
@@ -362,7 +361,6 @@
                     data.push({"label" : items, "value" : json[name][items]});
                     lengthOfData += 1;
                 }
-                console.log(data);
 
                 var color = d3.scaleOrdinal(d3.schemeCategory20b);
 
@@ -431,22 +429,46 @@
                 {
                     if (data[i].Industry == industry && data[i].SimpleLocation == stateName)
                     {
-                        if (data[i].CurrentCompanies != "")
+                        if (data[i].Headline != "--")
                         {
-                            possibleHeadlines.push(data[i].Headline + " - " + data[i].CurrentCompanies);
-                        }
-                        else
-                        {
-                            possibleHeadlines.push(data[i].Headline);
+                            if (data[i].CurrentCompanies != "")
+                            {
+                                if (data[i].CurrentCompanyLinks == "")
+                                {
+                                    possibleHeadlines.push({"headline" : data[i].Headline, "company" : data[i].CurrentCompanies});
+                                }
+                                else
+                                {
+                                    possibleHeadlines.push({"headline" : data[i].Headline, "company" : data[i].CurrentCompanies, "link" : data[i].CurrentCompanyLinks});
+                                }
+                            }
+                            else
+                            {
+                                possibleHeadlines.push({"headline" : data[i].Headline});
+                            }
                         }
                     }
                 }
                 var header = "<h2> Possible Job Title(s) in " + stateName + ":" + " </h2>";
                 var str = "<ul class='jobHeadlines' style='position:relative; bottom:0px; font: 13px sans-serif'>";
                 for(var i in possibleHeadlines){
-                    if (possibleHeadlines[i] != "--")
+                    if (possibleHeadlines[i].headline != "--")
                     {
-                        str += "<li>"+ possibleHeadlines[i] + "</li>";
+                        if ("company" in possibleHeadlines[i])
+                        {
+                            if ("link" in possibleHeadlines[i])
+                            {
+                                str += "<li>"+ possibleHeadlines[i].headline + " - <b><a href=' " + possibleHeadlines[i].link + "'>" + possibleHeadlines[i].company + "</a></b></li>";
+                            }
+                            else
+                            {
+                                str += "<li>"+ possibleHeadlines[i].headline + " - <b>" + possibleHeadlines[i].company + "</b></li>";
+                            }
+                        }
+                        else
+                        {
+                            str += "<li>"+ possibleHeadlines[i].headline + "</li>";
+                        }
                     }
                 }
                 str += '</ul>';
@@ -462,7 +484,7 @@
                 var width = 720;
 
                 var radius = Math.min(width, height) / 2;
-                var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+                // var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
                 var dataToDisplay = [];
                 var tempObject = {};
@@ -541,7 +563,7 @@
                 })
                 .on("click", function(d) {
                   clear("list");
-                  getJobTitles(name, d.data.label);
+                //   getJobTitles(name, d.data.label);
                 })
             });
         }
