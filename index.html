@@ -4,16 +4,13 @@
     <title>Beyond the Uniform</title>
     <meta charset="utf-8">
     <link href="./src/netjsongraph.css" rel="stylesheet">
-    <!-- theme can be easily customized via css -->
     <link href="./src/netjsongraph-theme.css" rel="stylesheet">
     <meta name="description" content="">
 	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-	<!-- <link rel="stylesheet" href="./css/normalize.css"> -->
 	<link rel="stylesheet" href="./css/stylesheet.css">
     <link rel="stylesheet" href="./dist/css/selectize.default.css">
 	<script src="js/jquery.min.js"></script>
 	<script src="./dist/js/standalone/selectize.js"></script>
-    <!-- <script src="./js/d3.min.js"></script> -->
     <script src="https://d3js.org/d3.v4.min.js"></script>
     <script src="./js/colorbrewer.js"></script>
 </head>
@@ -22,8 +19,8 @@
         <h1> Beyond the Uniform </h1>
         <h4> By Conor Campbell, Melissa Plakyda, Michael Hauf, and Spencer Nelson </h4>
         <div class="buttons">
-            <button class="m" value="FindTitles" onclick="buttonClicked('titles')">Find Your Job Title</button>
-            <button class="m" value="FindCompanies" onclick="buttonClicked('companies')">Find Your Companies</button>
+            <button class="m" value="FindTitles" onclick="buttonClicked('titles')">I Know My Location</button>
+            <button class="m" value="FindCompanies" onclick="buttonClicked('companies')">I'm Available for Relocation</button>
         </div>
         <div class="selectors" id="selectors">
         	<div class="control-group">
@@ -263,12 +260,15 @@
 
 
 
-                  var max_area = d3.max( json.features, function(d)
+                  var max = d3.max( json.features, function(d)
                   {
                       return (d.properties.veteranPopulation + (d.properties.yearsScore * 2))
                   });
                 //   var color = d3.scaleLinear().domain([0, max_area]).range(['beige', 'red']);
-                  var color = d3.scaleLinear().domain([0, max_area]).range(['#ece7f2','#2b8cbe']);
+                //   var color = d3.scaleLinear().domain([0, max_area]).range(['#ece7f2','#2b8cbe']);
+                  var color = d3.scaleQuantize()
+                    .domain([0, max])
+                    .range(colorbrewer.Blues[9]);
 
                   svg.selectAll("path")
                   	.data(json.features)
@@ -292,7 +292,6 @@
                     }
 
                   	var value = currentPopulation + (currentYearsScore * 2);
-                    // console.log(d.properties.name + ' : ' + currentYearsScore + ' : ' + currentPopulation);
                     if (typeof value == "undefined")
                     {
                         return color(0);
@@ -488,7 +487,6 @@
                     nextElement.push(typeof possibleHeadlines[items].link == "undefined" ? "" : possibleHeadlines[items].link);
                     csvData.push(nextElement);
                 }
-                console.log(csvData);
                 currentCSVData = csvData;
             });
         }
@@ -605,11 +603,11 @@
                             {
                                 if (data[i].CurrentCompanyLinks == "")
                                 {
-                                    possibleHeadlines.push({"headline" : data[i].Headline, "company" : data[i].CurrentCompanies});
+                                    possibleHeadlines.push({"headline" : data[i].Headline, "company" : data[i].CurrentCompanies, "location" : data[i].SimpleLocation});
                                 }
                                 else
                                 {
-                                    possibleHeadlines.push({"headline" : data[i].Headline, "company" : data[i].CurrentCompanies, "link" : data[i].CurrentCompanyLinks});
+                                    possibleHeadlines.push({"headline" : data[i].Headline, "company" : data[i].CurrentCompanies, "link" : data[i].CurrentCompanyLinks, "location" : data[i].SimpleLocation});
                                 }
                             }
                         }
@@ -624,11 +622,11 @@
                     {
                         if ("link" in possibleHeadlines[i])
                         {
-                            str += "<li><b><a href=' " + possibleHeadlines[i].link + "'>" + possibleHeadlines[i].company + "</a></b></li>";
+                            str += "<li><a href=' " + possibleHeadlines[i].link + "'>" + possibleHeadlines[i].company + "</a> - <b>" + possibleHeadlines[i].location + "</b></li>";
                         }
                         else
                         {
-                            str += "<li>"+ possibleHeadlines[i].company + "</li>";
+                            str += "<li>"+ possibleHeadlines[i].company + " - <b>" + possibleHeadlines[i].location + "</b></li>";
                         }
                     }
                 }
@@ -637,23 +635,15 @@
                 $('#pie').append(str);
                 $('#pie').append(exportButton);
 
-                //lets export data here
-                var csvData = [["Company", "Company Link", "Headline"]];
+                //export data
+                var csvData = [["Company", "Company Link", "Headline", "Location"]];
                 for (items in possibleHeadlines)
                 {
                     nextElement = [];
-                    if (typeof possibleHeadlines[items].headline == "undefined")
-                    {
-                        nextElement.push(possibleHeadlines[items].company);
-                        nextElement.push(possibleHeadlines[items].link);
-                        nextElement.push("");
-                    }
-                    else
-                    {
-                        nextElement.push(possibleHeadlines[items].company);
-                        nextElement.push(possibleHeadlines[items].link);
-                        nextElement.push("");
-                    }
+                    nextElement.push(typeof possibleHeadlines[items].company == "undefined" ? "" : possibleHeadlines[items].company);
+                    nextElement.push(typeof possibleHeadlines[items].link == "undefined" ? "" : possibleHeadlines[items].link);
+                    nextElement.push(typeof possibleHeadlines[items].headline == "undefined" ? "" : possibleHeadlines[items].headline);
+                    nextElement.push(typeof possibleHeadlines[items].location == "undefined" ? "" : possibleHeadlines[items].location);
                     csvData.push(nextElement);
                 }
                 currentCSVData = csvData;
