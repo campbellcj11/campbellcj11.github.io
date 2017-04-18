@@ -49,8 +49,7 @@
     <div class="pie" id="pie">
         <div class="legend" id="legend"></div>
     </div>
-    <div class="list" id="list">
-    </div>
+    <div class="list" id="list"></div>
     	<script>
         var buttonSelected = "";
         var speciality = "";
@@ -149,6 +148,8 @@
         /* Use D3 to draw choropleth map that colors map according to YOS and speciality. */
         function drawMap()
         {
+            var header = "<h2>Choropleth Color Encoded Map" + "</h2>";
+            $('#map').append(header);
             //SVG setup
             var height = 400;
             var width = 500 * 1.21;
@@ -346,12 +347,11 @@
 
         function drawPieChartIndustry(name)
         {
-            var header = "<h2> Click to see possible job titles" + "</h2>";
+            var header = "<h2> Click to see Possible Job Titles" + "</h2>";
             $('#pie').append(header);
             d3.json("industries.json", function(json) {
                 var height = 375;
-                var width = 720;
-
+                var width = 550;
                 var radius = Math.min(width, height) / 2;
                 var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
                 data = [];
@@ -479,9 +479,11 @@
 
         function pieChartFirst()
         {
+            var header = "<h2>Industries: Click to see Possible Companies" + "</h2>";
+            $('#map').append(header);
             d3.csv("USNALinkedInDataScott.csv", function(data) {
                 var height = 375;
-                var width = 720;
+                var width = 550;
 
                 var radius = Math.min(width, height) / 2;
                 // var color = d3.scaleOrdinal(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
@@ -490,17 +492,20 @@
                 var tempObject = {};
                 for (var i = 0; i < data.length; i++)
                 {
-                    var currentYOS = data[i].YearsService;
-                    var currentBranch = data[i].WarfareSpecialty;
-                    if (Math.abs(currentYOS - yearsOfService) <= 1 && currentBranch == speciality)
+                    if (data[i].CurrentCompanies != "")
                     {
-                        if (data[i].Industry in tempObject)
+                        var currentYOS = data[i].YearsService;
+                        var currentBranch = data[i].WarfareSpecialty;
+                        if (Math.abs(currentYOS - yearsOfService) <= 1 && currentBranch == speciality)
                         {
-                            tempObject[data[i].Industry] += 1;
-                        }
-                        else
-                        {
-                            tempObject[data[i].Industry] = 1;
+                            if (data[i].Industry in tempObject)
+                            {
+                                tempObject[data[i].Industry] += 1;
+                            }
+                            else
+                            {
+                                tempObject[data[i].Industry] = 1;
+                            }
                         }
                     }
                 }
@@ -562,10 +567,89 @@
                        .style("opacity", 0);
                 })
                 .on("click", function(d) {
-                  clear("list");
-                //   getJobTitles(name, d.data.label);
+                    clear("pie");
+                    findCompanies(d.data.label);
                 })
             });
+        }
+
+        function findCompanies(industry)
+        {
+            d3.csv("USNALinkedInDataScott.csv", function(data) {
+                var counter = 0;
+
+                possibleHeadlines = [];
+                for (var i = 0; i < data.length; i++)
+                {
+                    differenceInYears = Math.abs(data[i].YearsService - yearsOfService);
+                    if (data[i].Industry == industry && differenceInYears <= 1  && data[i].WarfareSpecialty == speciality)
+                    {
+                        if (data[i].Headline != "")
+                        {
+                            if (data[i].CurrentCompanies != "")
+                            {
+                                if (data[i].CurrentCompanyLinks == "")
+                                {
+                                    possibleHeadlines.push({"headline" : data[i].Headline, "company" : data[i].CurrentCompanies});
+                                }
+                                else
+                                {
+                                    possibleHeadlines.push({"headline" : data[i].Headline, "company" : data[i].CurrentCompanies, "link" : data[i].CurrentCompanyLinks});
+                                }
+                            }
+                        }
+                    }
+                }
+
+                var header = "<h2> Possible Comapany/Companies within " + industry + ":" + " </h2>";
+                var str = "<ul class='comapanyTitles' style='position:relative; bottom:0px; font: 13px sans-serif; text-align: left'>";
+                for(var i in possibleHeadlines){
+                    if (possibleHeadlines[i].headline != "--")
+                    {
+                        if ("link" in possibleHeadlines[i])
+                        {
+                            str += "<li><b><a href=' " + possibleHeadlines[i].link + "'>" + possibleHeadlines[i].company + "</a></b></li>";
+                        }
+                        else
+                        {
+                            str += "<li>"+ possibleHeadlines[i].company + "</li>";
+                        }
+                    }
+                }
+                str += '</ul>';
+                $('#pie').append(header);
+                $('#pie').append(str);
+
+                //lets export data here
+                // var headers = ["Company", "Company Link", "Headline"];
+                // data = [];
+                // for (items in possibleHeadlines)
+                // {
+                //     if (typeof possibleHeadlines[items].headline == "undefined")
+                //     {
+                //
+                //     }
+                //     else
+                //     {
+                //
+                //     }
+                // }
+                // var data = [["name1", "city1", "some other info"], ["name2", "city2", "more info"]];
+                // var csvContent = "data:text/csv;charset=utf-8,";
+                // data.forEach(function(infoArray, index){
+                //    dataString = infoArray.join(",");
+                //    csvContent += index < data.length ? dataString+ "\n" : dataString;
+                //
+                // });
+                // exportToCSV(csvContent);
+
+            });
+        }
+
+        function exportToCSV(csvData)
+        {
+            var encodedUri = encodeURI(csvData);
+            window.open(encodedUri);
         }
     	</script>
 </body>

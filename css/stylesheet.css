@@ -1,5 +1,6 @@
 div.map
 {
+	text-align:center;
 	width: 45%;
 	float:right;
 	height: 450px;
@@ -33,7 +34,7 @@ div.list {
 }
 
 body {
-	margin: 5;
+	margin: 10px;
 	padding: 5px;
 	font-family: Helvetica, arial, sans-serif;
 	font-size: 15px;
